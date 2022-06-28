@@ -1,23 +1,20 @@
 import React from "react";
-
+import AwesomeSlider from 'react-awesome-slider';
+import { bounce } from 'react-animations';
+import { StyleSheet, css } from 'aphrodite';
+import mbackground from '../assets/images/mbackground.jpg';
 // We'll use ethers to interact with the Ethereum network and our contract
 import { ethers } from "ethers";
-
 // We import the contract's artifacts and address here, as we are going to be
 // using them with ethers
 import TokenArtifact from "../contracts/Token.json";
 import contractAddress from "../contracts/contract-address.json";
-
 // All the logic of this dapp is contained in the Dapp component.
 // These other components are just presentational ones: they don't have any
 // logic. They just render HTML.
 import { NoWalletDetected } from "./NoWalletDetected";
 import { ConnectWallet } from "./ConnectWallet";
 import { Loading } from "./Loading";
-import { Transfer } from "./Transfer";
-import { TransactionErrorMessage } from "./TransactionErrorMessage";
-import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
-import { NoTokensMessage } from "./NoTokensMessage";
 
 // This is the Hardhat Network id, you might change it in the hardhat.config.js.
 // If you are using MetaMask, be sure to change the Network id to 1337.
@@ -27,6 +24,14 @@ const HARDHAT_NETWORK_ID = '31337';
 
 // This is an error code that indicates that the user canceled a transaction
 const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
+
+// setup some animations 
+const styles = StyleSheet.create({
+  bounce: {
+    animationName: bounce,
+    animationDuration: '1s'
+  }
+})
 
 // This component is in charge of doing these things:
 //   1. It connects to the user's wallet
@@ -54,10 +59,25 @@ export class Dapp extends React.Component {
       txBeingSent: undefined,
       transactionError: undefined,
       networkError: undefined,
+      coins: [
+        {
+          type: "userinfo"
+        },
+        {
+          type: "coin",
+          name: "Bitcoin",
+        },
+        {
+          type: "coin",
+          name: "Ethereum",
+        }
+      ]
     };
 
     this.state = this.initialState;
   }
+
+
 
   render() {
     // Ethereum wallets inject the window.ethereum object. If it hasn't been
@@ -75,8 +95,8 @@ export class Dapp extends React.Component {
     // clicks a button. This callback just calls the _connectWallet method.
     if (!this.state.selectedAddress) {
       return (
-        <ConnectWallet 
-          connectWallet={() => this._connectWallet()} 
+        <ConnectWallet
+          connectWallet={() => this._connectWallet()}
           networkError={this.state.networkError}
           dismiss={() => this._dismissNetworkError()}
         />
@@ -91,74 +111,72 @@ export class Dapp extends React.Component {
 
     // If everything is loaded, we render the application.
     return (
-      <div className="container p-4">
-        <div className="row">
-          <div className="col-12">
-            <h1>
-              {this.state.tokenData.name} ({this.state.tokenData.symbol})
-            </h1>
-            <p>
-              Welcome <b>{this.state.selectedAddress}</b>, you have{" "}
-              <b>
-                {this.state.balance.toString()} {this.state.tokenData.symbol}
-              </b>
-              .
-            </p>
-          </div>
-        </div>
+      <AwesomeSlider animation="cubeAnimation" bullets={false}>
 
-        <hr />
 
-        <div className="row">
-          <div className="col-12">
-            {/* 
-              Sending a transaction isn't an immediate action. You have to wait
-              for it to be mined.
-              If we are waiting for one, we show a message here.
-            */}
-            {this.state.txBeingSent && (
-              <WaitingForTransactionMessage txHash={this.state.txBeingSent} />
-            )}
+        {
+          this.state.coins.map((item) => {
+            if (item.type === "userinfo") {
+              return (
+                <div data-src={mbackground} >
+                  <div className="container p-4">
+                    <div className="row">
+                      <div className="col-12">
+                        <h1>
+                          {this.state.tokenData.name} ({this.state.tokenData.symbol})
+                        </h1>
+                        <p>
+                          Welcome <b>{this.state.selectedAddress}</b>, you have{" "}
+                          <b>
+                            {this.state.balance.toString()} {this.state.tokenData.symbol}
+                          </b>
+                          .
+                        </p>
+                      </div>
+                    </div>
 
-            {/* 
-              Sending a transaction can fail in multiple ways. 
-              If that happened, we show a message here.
-            */}
-            {this.state.transactionError && (
-              <TransactionErrorMessage
-                message={this._getRpcErrorMessage(this.state.transactionError)}
-                dismiss={() => this._dismissTransactionError()}
-              />
-            )}
-          </div>
-        </div>
+                    <hr />
+                    <div className="col-12">
+                      <div className="card">
+                        <div className="card-body">
+                            <h5 className="card-title">Bitcoin</h5>
+                            <p className="card-text">You bet on {item.name} for tomorrow.</p>
+                          </div>
+                      </div>
+                    </div>
+                    <div className="col-12 mt-1">
+                      <button className="btn btn-primary">Show My Previous Bet</button>
+                    </div>
 
-        <div className="row">
-          <div className="col-12">
-            {/*
-              If the user has no tokens, we don't show the Transfer form
-            */}
-            {this.state.balance.eq(0) && (
-              <NoTokensMessage selectedAddress={this.state.selectedAddress} />
-            )}
+                  </div>
+                </div>
+              )
+            } else if (item.type === "coin") {
+              return (
+                <div data-src={mbackground}>
+                  <div className="row w-100">
+                    <div className="col-6">
+                      <img src={require(`../assets/images/${item.name.toLowerCase()}.png`)} className="vert-move" />
+                    </div>
+                    <div className="col-6">
+                      <div className="card">
+                        <div className="card-body">
+                          <h5 className="card-title">{item.name}</h5>
+                          <p className="card-text">You want to make your bet on {item.name}.</p>
+                          <a href="#" className="btn btn-primary">Yes I go for {item.name}</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+          }
+          )
+        }
 
-            {/*
-              This component displays a form that the user can use to send a 
-              transaction and transfer some tokens.
-              The component doesn't have logic, it just calls the transferTokens
-              callback.
-            */}
-            {this.state.balance.gt(0) && (
-              <Transfer
-                transferTokens={(to, amount) =>
-                  this._transferTokens(to, amount)
-                }
-                tokenSymbol={this.state.tokenData.symbol}
-              />
-            )}
-          </div>
-        </div>
-      </div>
+      </AwesomeSlider>
+
     );
   }
 
@@ -195,10 +213,10 @@ export class Dapp extends React.Component {
       if (newAddress === undefined) {
         return this._resetState();
       }
-      
+
       this._initialize(newAddress);
     });
-    
+
     // We reset the dapp state if the network is changed
     window.ethereum.on("chainChanged", ([networkId]) => {
       this._stopPollingData();
@@ -361,7 +379,7 @@ export class Dapp extends React.Component {
       return true;
     }
 
-    this.setState({ 
+    this.setState({
       networkError: 'Please connect Metamask to Localhost:8545'
     });
 
